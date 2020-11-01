@@ -348,6 +348,10 @@ def create_list_item_from_stream(stream):
                  'RunPlugin({0}?action=add_favourite&type=series&id={1}&label={2})'
                  .format(_url, stream['partOfSeries']['id'], series_title.encode('utf-8')))
             context_menu.append(add_series_favourite_context_menu_item)
+            series_context_menu_item = \
+                (get_translation(32074), 'ActivateWindow(Videos,{0}?action=series&series_id={1})'
+                 .format(_url, stream['partOfSeries']['id']))
+            context_menu.append(series_context_menu_item)
     found_current_publication = False
     for publication in stream['publicationEvent']:
         if publication['temporalStatus'] == 'currently' and publication['type'] == 'OnDemandPublication':

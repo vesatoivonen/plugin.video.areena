@@ -206,10 +206,19 @@ def sorted_series(series_id):
     offset = 0
     while page is None or page:
         page = get_items(offset, series=series_id, limit=100)
-        items += [s for s in page if 'episodeNumber' in s]
+        items += page
         offset += 100
         time.sleep(0.2)
-    return sorted(items, key=lambda s: (s['partOfSeason']['seasonNumber'], s['episodeNumber']))
+
+    has_episodes = [i for i in items if 'episodeNumber' in i]
+    if has_episodes:
+        has_seasons = [i for i in items if 'partOfSeason' in i]
+        if has_seasons:
+            return sorted(items, key=lambda s: (s['partOfSeason']['seasonNumber'], s['episodeNumber']))
+        else:
+            return sorted(items, key=lambda s: s['episodeNumber'])
+    else:
+        return items
 
 
 def list_series(series_id, offset=0):

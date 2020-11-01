@@ -302,3 +302,7 @@ msgstr "Skapa mapp"
 msgctxt "#32072"
 msgid "NOT AVAILABLE"
 msgstr "INTE TILLGÄNGLIG"
+
+msgctxt "#32073"
+msgid "No sorting"
+msgstr ""

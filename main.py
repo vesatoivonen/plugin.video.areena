@@ -117,7 +117,9 @@ def get_items(offset, category=None, query=None, limit=None, series=None):
     if _addon.getSetting("showUnplayable") == "false":
         parameters.append('contentprotection=22-0,22-1')
     parameters.append('availability=ondemand')
-    parameters.append('order=' + get_sort_method())
+    order = get_sort_method()
+    if order:
+        parameters.append('order=' + order)
     parameters.append('offset=' + str(offset))
     return get_areena_api_json_data('programs', 'items.json', parameters)
 
@@ -1001,6 +1003,8 @@ def get_sort_method():
         sort_method = 'publication.endtime'
     elif sort_method == 6:
         sort_method = 'updated'
+    elif sort_method == 7:
+        return None
     else:
         raise ValueError('Unknown sort method {0}'.format(sort_method))
 

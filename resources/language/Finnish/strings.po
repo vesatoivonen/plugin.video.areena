@@ -302,3 +302,7 @@ msgstr "Lisää hakemisto"
 msgctxt "#32072"
 msgid "NOT AVAILABLE"
 msgstr "EI SAATAVILLA"
+
+msgctxt "#32073"
+msgid "No sorting"
+msgstr ""

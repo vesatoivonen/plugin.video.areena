@@ -200,10 +200,22 @@ def list_sub_categories(base_category):
     return listing
 
 
-def list_series(series_id, offset):
-    series = get_items(offset, series=series_id)
-    series_url = '{0}?action=series&series_id={1}&offset={2}'.format(_url, series_id, offset + 25)
-    list_streams([], series, series_url)
+def sorted_series(series_id):
+    items = []
+    page = None
+    offset = 0
+    while page is None or page:
+        page = get_items(offset, series=series_id, limit=100)
+        items += [s for s in page if 'episodeNumber' in s]
+        offset += 100
+        time.sleep(0.2)
+    return sorted(items, key=lambda s: (s['partOfSeason']['seasonNumber'], s['episodeNumber']))
+
+
+def list_series(series_id, offset=0):
+    series = sorted_series(series_id)[offset:offset+25]
+    offset_url = '{0}?action=series&series_id={1}&offset={2}'.format(_url, series_id, offset + 25) if len(series) == 25 else None
+    list_streams([], series, offset_url)
 
 
 def get_image_url_for_series(series_id):

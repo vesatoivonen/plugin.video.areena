@@ -227,19 +227,14 @@ def list_series(series_id, offset=0):
     list_streams([], series, offset_url)
 
 
-def get_image_url_for_series(series_id):
-    series_items = get_items(0, series=series_id, limit=1)
-    if series_items:
-        series_item = series_items[0]
-        if 'partOfSeries' in series_item:
-            if 'available' in series_item['partOfSeries']['image']:
-                if series_item['partOfSeries']['image']['available']:
-                    image_url = '{0}/{1}/{2}.{3}'.format(
-                        _image_cdn_url, _image_transformation, series_item['partOfSeries']['image']['id'], 'png')
-                    return image_url
-    else:
-        return 'NO_ITEMS'
-    log('Could not find image URL for series {0}'.format(series_id), xbmc.LOGWARNING)
+def get_image_url_for_series(series_item):
+    if 'partOfSeries' in series_item:
+        if 'available' in series_item['partOfSeries']['image']:
+            if series_item['partOfSeries']['image']['available']:
+                image_url = '{0}/{1}/{2}.{3}'.format(
+                    _image_cdn_url, _image_transformation, series_item['partOfSeries']['image']['id'], 'png')
+                return image_url
+    log('Could not find image URL for item {0}'.format(series_item['id']), xbmc.LOGWARNING)
     return None
 
 
@@ -709,6 +704,7 @@ def search(search_string=None, offset=0, clear_search=False, remove_string=None)
                 result['data'].append(item)
             log(result)
             list_of_series = {}
+            series_images = {}
             listing = []
             for item in result['data']:
                 if 'partOfSeries' in item:
@@ -717,12 +713,14 @@ def search(search_string=None, offset=0, clear_search=False, remove_string=None)
                             if language_code in item['partOfSeries']['title']:
                                 list_of_series[item['partOfSeries']['id']] = item['partOfSeries']['title'][language_code]
                                 break
+                image = get_image_url_for_series(item)
+                if image:
+                    series_images[item['partOfSeries']['id']] = image
             for key in list_of_series:
                 series_list_item = xbmcgui.ListItem(label=list_of_series[key])
                 series_url = '{0}?action=series&series_id={1}&offset={2}'.format(_url, key, 0)
-                image_url = get_image_url_for_series(key)
-                if image_url:
-                    series_list_item.setThumbnailImage(image_url)
+                if key in series_images:
+                    series_list_item.setThumbnailImage(series_images[key])
                 listing.append((series_url, series_list_item, True))
             xbmcplugin.addDirectoryItems(_handle, listing, len(listing))
     xbmcplugin.endOfDirectory(_handle)
@@ -751,13 +749,13 @@ def favourites(favourites_folder="favourites"):
         favourite_list_item = xbmcgui.ListItem(label=fav_label)
         if fav_type == 'series':
             favourite_url = '{0}?action=series&series_id={1}&offset={2}'.format(_url, fav_id, 0)
-            image_url = get_image_url_for_series(fav_id)
-            if image_url:
-                if image_url == 'NO_ITEMS':
-                    favourite_list_item.setLabel('{0} [COLOR red]{1}[/COLOR]'.format(
-                        favourite_list_item.getLabel(), get_translation(32072)))
-                else:
-                    favourite_list_item.setThumbnailImage(image_url)
+            # image_url = get_image_url_for_series(favourite)
+            # if image_url:
+            #     if image_url == 'NO_ITEMS':
+            #         favourite_list_item.setLabel('{0} [COLOR red]{1}[/COLOR]'.format(
+            #             favourite_list_item.getLabel(), get_translation(32072)))
+            #     else:
+            #         favourite_list_item.setThumbnailImage(image_url)
             is_folder = True
         elif fav_type == 'episode':
             list_item = create_list_item_from_stream(get_item(fav_id))

@@ -676,13 +676,9 @@ def search(search_string=None, offset=0, clear_search=False, remove_string=None)
             list_streams([], result, search_url)
         else:
             result = {'data': []}
-            while True:
-                data = get_items(offset, query=query, limit='100')
-                for item in data:
-                    result['data'].append(item)
-                offset += 100
-                if len(data) < 100:
-                    break
+            data = get_items(offset, query=query, limit='100')
+            for item in data:
+                result['data'].append(item)
             log(result)
             list_of_series = {}
             listing = []
@@ -691,10 +687,7 @@ def search(search_string=None, offset=0, clear_search=False, remove_string=None)
                     if 'title' in item['partOfSeries']:
                         for language_code in get_language_codes():
                             if language_code in item['partOfSeries']['title']:
-                                title = item['partOfSeries']['title'][language_code]
-                                if query.decode('utf-8').lower() in title.lower():
-                                    list_of_series[item['partOfSeries']['id']] = \
-                                        item['partOfSeries']['title'][language_code]
+                                list_of_series[item['partOfSeries']['id']] = item['partOfSeries']['title'][language_code]
                                 break
             for key in list_of_series:
                 series_list_item = xbmcgui.ListItem(label=list_of_series[key])

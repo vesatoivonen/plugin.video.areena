@@ -91,7 +91,7 @@ def get_categories():
     return get_areena_api_json_data('programs', 'categories.json', [])
 
 
-def get_items(offset, category=None, query=None, limit=None, series=None):
+def get_items(offset, category=None, query=None, limit=None, series=None, season=None):
     """
     Get the list of items.
     :param offset: offset for streams to retrieve
@@ -110,6 +110,8 @@ def get_items(offset, category=None, query=None, limit=None, series=None):
         parameters.append('limit={0}'.format(limit))
     if series:
         parameters.append('series=' + series)
+    if season:
+        parameters.append('season=' + season)
     if _addon.getSetting("showClips") == "false":
         parameters.append('type=program')
     if _addon.getSetting("inFinland") == "false":
@@ -118,7 +120,9 @@ def get_items(offset, category=None, query=None, limit=None, series=None):
         parameters.append('contentprotection=22-0,22-1')
     parameters.append('availability=ondemand')
     order = get_sort_method()
-    if order:
+    if season:
+        parameters.append('order=episode.hash:asc')
+    elif order:
         parameters.append('order=' + order)
     parameters.append('offset=' + str(offset))
     return get_areena_api_json_data('programs', 'items.json', parameters)
@@ -200,31 +204,33 @@ def list_sub_categories(base_category):
     return listing
 
 
-def sorted_series(series_id):
-    items = []
-    page = None
-    offset = 0
-    while page is None or page:
-        page = get_items(offset, series=series_id, limit=100)
-        items += page
-        offset += 100
-        time.sleep(0.2)
+def list_seasons(series_id):
+    seasons = get_areena_api_json_data('series/items', '{}.json'.format(series_id), [])
+    listing = []
+    is_folder = True
+    # TODO handle series with missing season data
+    for season in seasons.get('season', []):
+        season_name = ''
+        for language_code in get_language_codes():
+            if language_code in season['title']:
+                season_name = season['title'][language_code].encode('utf-8')
+                break
+        season_number = season.get('seasonNumber', None)
+        title = "{}, Kausi {}".format(season_name, season_number) if season_number else season_name
+        list_item = xbmcgui.ListItem(label=title)
+        list_item.setInfo('video', {'title': title})
+        url = '{}?action=season&season_id={}'.format(_url, season['id'])
+        listing.append((url, list_item, is_folder))
 
-    has_episodes = [i for i in items if 'episodeNumber' in i]
-    if has_episodes:
-        has_seasons = [i for i in items if 'partOfSeason' in i]
-        if has_seasons:
-            return sorted(items, key=lambda s: (s['partOfSeason']['seasonNumber'], s['episodeNumber']))
-        else:
-            return sorted(items, key=lambda s: s['episodeNumber'])
-    else:
-        return items
+    xbmcplugin.addDirectoryItems(_handle, listing, len(listing))
+    xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE)
+    xbmcplugin.endOfDirectory(_handle)
 
 
-def list_series(series_id, offset=0):
-    series = sorted_series(series_id)[offset:offset+25]
-    offset_url = '{0}?action=series&series_id={1}&offset={2}'.format(_url, series_id, offset + 25) if len(series) == 25 else None
-    list_streams([], series, offset_url)
+def list_season(season_id, offset=0):
+    episodes = get_items(offset, season=season_id)
+    offset_url = '{0}?action=season&season_id={1}&offset={2}'.format(_url, season_id, int(offset) + 25) if len(episodes) == 25 else None
+    list_streams([], episodes, offset_url)
 
 
 def get_image_url_for_series(series_item):
@@ -1186,8 +1192,9 @@ def router(param_string):
             new_folder = params['to']
             move_favourite_to_folder(favourite_type, favourite_id, favourite_label, old_folder, new_folder)
         elif params['action'] == 'series':
-            series_id = params['series_id']
-            list_series(series_id, offset)
+            list_seasons(params['series_id'])
+        elif params['action'] == 'season':
+            list_season(params['season_id'], params.get('offset',0))
         elif params['action'] == 'categories':
             base_category = params['base']
             list_categories(base_category)
